@@ -32,23 +32,25 @@ public class AVLTree implements Directory {
             return (nd != null) ? nd.depth : 0;
         }
 
-        private void insert(String key, Object value) {
+        private Node insert(String key, Object value) {
             if (key.compareTo(this.key) < 0) {
                 if (this.left == null) {
                     this.left = new Node(key, value, this);
                 } else {
-                    this.left.insert(key, value);
+                    this.left = this.left.insert(key, value);
                 }
             } else {
                 if (this.right == null) {
                     this.right = new Node(key, value, this);
                 } else {
-                    this.right.insert(key, value);
+                    this.right = this.right.insert(key, value);
                 }
             }
-            this.depth = Math.max(depth(parent.left), depth(parent.right)) + 1;
-            checkAndBalance(this); //betta check yaself befo' yo wreck yaself shiggity-check yaself befoä yo wreck yaself
+            //betta check yaself befo' yo wreck yaself shiggity-check yaself befoä yo wreck yaself
             //cuz big deez in y mouth is bad fo' yo health.
+            this.depth = Math.max(depth(parent.left), depth(parent.right)) + 1;
+            return this.checkAndBalance();
+            //return this.rebalance();
         }
 
         private Object find(String key) {
@@ -128,119 +130,185 @@ public class AVLTree implements Directory {
             return this.right.getRightMost();
         }
 
-        private void checkAndBalance(Node nd) {
-            Node subtreeRoot = nd;
-            Node subtreeRight = nd.right;
-            Node subtreeLeft = nd.left;
+        /**
+         * DON'T USE THIS ITS BROKEN
+         * @param node that is unbalanced.
+         */
+        private Node checkAndBalance() {
+            Node subtreeRoot = this;
+            Node subtreeRight = this.right;
+            Node subtreeLeft = this.left;
 
-            if (depth(subtreeLeft) - depth(subtreeRight) <= -2) {//höger subträd är tyngre än vänster i subträdsroten
+            if (depth(subtreeLeft) - depth(subtreeRight) <= -1) {//höger subträd är tyngre än vänster i subträdsroten
                 if (depth(subtreeRight.left) - depth(subtreeRight.right) < 0) {
-                    rightRightRotation(subtreeRoot);
+                    return clockWiseRotation(subtreeRoot);
                 } else if (depth(subtreeRight.left) - depth(subtreeRight.right) > 1) {
-                    rightLeftRotation(subtreeRoot);
+                    //dubbelhöger
+                    return counterClockWiseRotation(clockWiseRotation(subtreeLeft));
                 } else {
                     System.out.println("Balancing Failed. Previous Balances funked up.");
+                    return null;
                 }
             } else if (depth(subtreeLeft) - depth(subtreeRight) >= 2) {//vänster subträd är tyngre än höger i subträdsroten
                 if (depth(subtreeLeft.left) - depth(subtreeLeft.right) < 0) {
-                    leftLeftRotation(subtreeRoot);
+                    return counterClockWiseRotation(subtreeRoot);
                 } else if (depth(subtreeLeft.left) - depth(subtreeLeft.right) > 1) {
-                    leftRightRotation(subtreeLeft);
-                }else {
+                    clockWiseRotation(subtreeRight);
+                    return counterClockWiseRotation(subtreeRoot);
+                } else {
                     System.out.println("Balancing Failed. Previous Balances funked up.");
+                    return null;
                 }
+            } else {
+                System.out.println("NO NEED MAN NO NEED");
+                return this;
             }
         }
 
-        private void leftLeftRotation(Node A) {
-            Node B = A.left;
-            Node F = A.parent;
+        /**
+         * given:
+         *            node
+         *          /     \
+         *     node.left  newRoot
+         *                 /    \
+         *       newRoot.left  newRoot.right
+         *
+         * ----------------------------------
+         * result:
+         *
+         *
+         *              newRoot
+         *              /       \
+         *         node       newRoot.right
+         *         /   \
+         *    node.left   newRoot.left
+         *
+         * @param unbalanced node
+         */
+        private Node counterClockWiseRotation(Node node) {
+            // TODO : Update heights..
+            // TODO : check if node.parent == null ... update root
+            Node newRoot = node.right;
+            Node oldParent = node.parent;
 
-            A.left = B.right;
-            B.right = A;
+            newRoot.parent = node.parent;
+            node.parent = newRoot;
+            node.right = newRoot.left;
+            newRoot.left = node;
 
-            if (F == null) {
-                root = B;
-                B.parent = null;
-            } else {
-                if (F.right == A) {
-                    F.right = B;
-                } else {
-                    F.left = B;
-                }
+            if (oldParent == null) {
+                root = newRoot;
             }
-            A.parent = B;
+
+            return newRoot;
         }
 
-        private void rightRightRotation(Node A) {
-            Node B = A.right;
-            Node F = A.parent;
+        /**
+         * AVLTree "Right Rotation"
+         * @param unbalanced node
+         */
+        private Node clockWiseRotation(Node node) {
+            // TODO : Update heights..
+            // TODO : check if node.parent == null ... update root
+            // same on rotateRight()
+            Node oldParent = node.parent;
+            Node newRoot = node.left;
 
-            A.right = B.left;
-            B.left = A;
-            if (F == null) {
-                root = B;
-                B.parent = null;
-            } else {
-                if (F.right == A) {
-                    F.right = B;
+            newRoot.parent = node.parent;
+            node.parent = newRoot;
+            node.left = newRoot.right;
+            newRoot.right = node;
+
+            if (oldParent == null) {
+                root = newRoot;
+            }
+            return newRoot;
+        }
+
+        /**
+         * Given metod ifrån BENI
+         * @return
+         */
+        private Node rebalance() {
+            if (depth(this.left) - depth(this.right) < -1) {
+                //högertungt
+                if (depth(this.right.left) > depth(this.right.right)) {
+//                    //vänstertungt barn
+//                 x
+//               /   \
+//              x     y
+//             / \   / \
+//            A    z1   z2
+//                / \   /D\
+//                B  C
+                    return this.rotate(this.left, this, this.left.right.left, this.left.right, this.left.right.right, this.right, this.right.right, this.parent);
                 } else {
-                    F.left = B;
+//                 simpel
+//                 x
+//               /   \
+//              x     y
+//             / \   / \
+//            A    z1   z2
+//                / \   /D\
+//                B  C
+                    return this.rotate(this.left, this, this.right.left, this.right, this.right.right.left, this.right.right, this.right.right.right, this.parent);
                 }
-                A.parent = B;
+            }
+            if (depth(this.left) - depth(this.right) > 1) {
+                //vänstertugnt
+                if (depth(this.right.left) > depth(this.right.right)) {
+                    return null; //rotate();
+                } else {
+                    return null; //rotate();
+                }
+            } else {
+                return null;
             }
         }
 
-        private void leftRightRotation(Node A) {
-            Node B = A.right;
-            Node C = B.left;
-            Node F = A.parent;
+        /**
+         * result:
+         *
+         *         r
+         *       /   \
+         *      x     y
+         *     / \   / \
+         *    A   B C   D
+         *
+         * FIGURE OUT HOW SHIT LOOKS FIRST YO
+         *
+         * @param A
+         * @param x
+         * @param B
+         * @param r root
+         * @param C
+         * @param y
+         * @param D
+         * @param parent
+         * @return
+         */
+        private Node rotate(Node A, Node x, Node B, Node r, Node C, Node y, Node D, Node parent) {
+            //fixa djup
+            x.depth = Math.max(depth(A), depth(B) + 1);
+            y.depth = Math.max(depth(C), depth(D) + 1);
+            r.depth = Math.max(depth(x), depth(y) + 1);
+            //referenser
+            x.left = A;
+            x.right = B;
+            y.left = C;
+            y.right = D;
+            r.left = x;
+            r.right = y;
+            //Parentfix
+            A.parent = x;
+            B.parent = x;
+            C.parent = y;
+            D.parent = y;
+            x.parent = r;
+            y.parent = r;
+            r.parent = parent;
 
-            A.right = C.left;
-            B.left = C.right;
-            C.right = B;
-            C.left = A;
-
-            if (F == null) {
-                root = C;
-                C.parent = null;
-            } else {
-                C.parent = F;
-                if (F.right == A) {
-                    F.right = C;
-                } else {
-                    F.left = C;
-                }
-            }
-            A.right.parent = A;
-            B.left.parent = B;
-            A.parent = B.parent = C;
-        }
-
-        private void rightLeftRotation(Node A) {
-            Node B = A.left;
-            Node C = B.right;
-            Node F = A.parent;
-
-            A.left = C.right;
-            B.right = C.left;
-            C.right = A;
-            C.left = B;
-
-            if (F == null) {
-                root = C;
-                C.parent = null;
-            } else {
-                C.parent = F;
-                if (F.right == A) {
-                    F.right = C;
-                } else {
-                    F.left = C;
-                }
-                A.right.parent = A;
-                B.left.parent = B;
-                A.parent = B.parent = C;
-            }
+            return r;
         }
     }
     private Node root, ref;
@@ -284,8 +352,6 @@ public class AVLTree implements Directory {
                         parentNode.left = root.left;
                         parentNode.right = root.right;
                         root = parentNode;
-
-
                     } else {
                         root.right.parent = null;
                         root = root.right;
@@ -307,48 +373,288 @@ public class AVLTree implements Directory {
     public Object getFirst() {
         if (root != null) {
             ref = root;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             while (ref.left != null) {
                 ref = ref.left;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             }
         }
         return ref.value;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     }
 
     public Object getNext() {
         if (ref.left == null && ref.right == null) {
             if (ref.parent.left == ref) {
                 ref = ref.parent;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                 return ref.value;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             } else {
                 while (ref.parent != null && ref.parent.right == ref) {
                     ref = ref.parent;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                 }
                 if (ref.parent != null) {
                     ref = ref.parent;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                 } else {
                     ref = null;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                     return null;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                 }
                 return ref.value;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             }
         } else {
             if (ref.right != null) {
                 ref = ref.right;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                 while (ref.left != null) {
                     ref = ref.left;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                 }
                 return ref.value;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             } else {
                 if (ref.parent != null) {
                     while (ref.parent.right == ref) {
                         ref = ref.parent;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                     }
                     if (ref.parent != null) {
                         ref = ref.parent;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                     }
                     return ref.value;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                 } else {
                     return null;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                 }
             }
         }
@@ -356,5 +662,12 @@ public class AVLTree implements Directory {
 
     public int size() {
         return this.size;
+
+
+
+
+
+
+
     }
 }
