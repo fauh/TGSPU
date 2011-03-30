@@ -21,6 +21,7 @@ public class AVLTree implements Directory {
             this.key = key;
             this.value = value;
             this.parent = parent;
+            this.depth = 1;
         }
 
         private Node(String key, Object value) {
@@ -48,14 +49,14 @@ public class AVLTree implements Directory {
             }
             //betta check yaself befo' yo wreck yaself shiggity-check yaself befoä yo wreck yaself
             //cuz big deez in y mouth is bad fo' yo health.
-            this.depth = Math.max(depth(parent.left), depth(parent.right)) + 1;
+            fixDepth(this);
             return this.checkAndBalance();
             //return this.rebalance();
         }
 
         private Object find(String key) {
             if (key.equalsIgnoreCase(key)) {
-                return this.value;
+                return this;
             } else if (key.compareTo(this.key) < 0) {
                 if (left != null) {
                     return left.find(key);
@@ -119,7 +120,7 @@ public class AVLTree implements Directory {
                 }
             }
             size--;
-            depth = Math.max(depth(left), depth(right));
+            fixDepth(deleteNode.parent);
             return deleteNode;
         }
 
@@ -139,9 +140,9 @@ public class AVLTree implements Directory {
             Node subtreeRight = this.right;
             Node subtreeLeft = this.left;
 
-            if (depth(subtreeLeft) - depth(subtreeRight) <= -1) {//höger subträd är tyngre än vänster i subträdsroten
+            if (depth(subtreeLeft) - depth(subtreeRight) < -1) {//höger subträd är tyngre än vänster i subträdsroten
                 if (depth(subtreeRight.left) - depth(subtreeRight.right) < 0) {
-                    return clockWiseRotation(subtreeRoot);
+                    return counterClockWiseRotation(subtreeRoot);
                 } else if (depth(subtreeRight.left) - depth(subtreeRight.right) > 1) {
                     //dubbelhöger
                     return counterClockWiseRotation(clockWiseRotation(subtreeLeft));
@@ -149,45 +150,22 @@ public class AVLTree implements Directory {
                     System.out.println("Balancing Failed. Previous Balances funked up.");
                     return null;
                 }
-            } else if (depth(subtreeLeft) - depth(subtreeRight) >= 2) {//vänster subträd är tyngre än höger i subträdsroten
+            } else if (depth(subtreeLeft) - depth(subtreeRight) > 1) {//vänster subträd är tyngre än höger i subträdsroten
                 if (depth(subtreeLeft.left) - depth(subtreeLeft.right) < 0) {
-                    return counterClockWiseRotation(subtreeRoot);
+                    return clockWiseRotation(subtreeRoot);
                 } else if (depth(subtreeLeft.left) - depth(subtreeLeft.right) > 1) {
                     clockWiseRotation(subtreeRight);
-                    return counterClockWiseRotation(subtreeRoot);
+                    return clockWiseRotation(counterClockWiseRotation(subtreeRoot));
                 } else {
                     System.out.println("Balancing Failed. Previous Balances funked up.");
                     return null;
                 }
             } else {
-                System.out.println("NO NEED MAN NO NEED");
                 return this;
             }
         }
 
-        /**
-         * given:
-         *            node
-         *          /     \
-         *     node.left  newRoot
-         *                 /    \
-         *       newRoot.left  newRoot.right
-         *
-         * ----------------------------------
-         * result:
-         *
-         *
-         *              newRoot
-         *              /       \
-         *         node       newRoot.right
-         *         /   \
-         *    node.left   newRoot.left
-         *
-         * @param unbalanced node
-         */
         private Node counterClockWiseRotation(Node node) {
-            // TODO : Update heights..
-            // TODO : check if node.parent == null ... update root
             Node newRoot = node.right;
             Node oldParent = node.parent;
 
@@ -199,7 +177,7 @@ public class AVLTree implements Directory {
             if (oldParent == null) {
                 root = newRoot;
             }
-
+            fixDepth(node);
             return newRoot;
         }
 
@@ -208,9 +186,6 @@ public class AVLTree implements Directory {
          * @param unbalanced node
          */
         private Node clockWiseRotation(Node node) {
-            // TODO : Update heights..
-            // TODO : check if node.parent == null ... update root
-            // same on rotateRight()
             Node oldParent = node.parent;
             Node newRoot = node.left;
 
@@ -222,93 +197,15 @@ public class AVLTree implements Directory {
             if (oldParent == null) {
                 root = newRoot;
             }
+            fixDepth(node);
             return newRoot;
         }
 
-        /**
-         * Given metod ifrån BENI
-         * @return
-         */
-        private Node rebalance() {
-            if (depth(this.left) - depth(this.right) < -1) {
-                //högertungt
-                if (depth(this.right.left) > depth(this.right.right)) {
-//                    //vänstertungt barn
-//                 x
-//               /   \
-//              x     y
-//             / \   / \
-//            A    z1   z2
-//                / \   /D\
-//                B  C
-                    return this.rotate(this.left, this, this.left.right.left, this.left.right, this.left.right.right, this.right, this.right.right, this.parent);
-                } else {
-//                 simpel
-//                 x
-//               /   \
-//              x     y
-//             / \   / \
-//            A    z1   z2
-//                / \   /D\
-//                B  C
-                    return this.rotate(this.left, this, this.right.left, this.right, this.right.right.left, this.right.right, this.right.right.right, this.parent);
-                }
+        public void fixDepth(Node node) {
+            while (node != null) {
+                node.depth = Math.max(depth(node.left), depth(node.right)) + 1;
+                node = node.parent;
             }
-            if (depth(this.left) - depth(this.right) > 1) {
-                //vänstertugnt
-                if (depth(this.right.left) > depth(this.right.right)) {
-                    return null; //rotate();
-                } else {
-                    return null; //rotate();
-                }
-            } else {
-                return null;
-            }
-        }
-
-        /**
-         * result:
-         *
-         *         r
-         *       /   \
-         *      x     y
-         *     / \   / \
-         *    A   B C   D
-         *
-         * FIGURE OUT HOW SHIT LOOKS FIRST YO
-         *
-         * @param A
-         * @param x
-         * @param B
-         * @param r root
-         * @param C
-         * @param y
-         * @param D
-         * @param parent
-         * @return
-         */
-        private Node rotate(Node A, Node x, Node B, Node r, Node C, Node y, Node D, Node parent) {
-            //fixa djup
-            x.depth = Math.max(depth(A), depth(B) + 1);
-            y.depth = Math.max(depth(C), depth(D) + 1);
-            r.depth = Math.max(depth(x), depth(y) + 1);
-            //referenser
-            x.left = A;
-            x.right = B;
-            y.left = C;
-            y.right = D;
-            r.left = x;
-            r.right = y;
-            //Parentfix
-            A.parent = x;
-            B.parent = x;
-            C.parent = y;
-            D.parent = y;
-            x.parent = r;
-            y.parent = r;
-            r.parent = parent;
-
-            return r;
         }
     }
     private Node root, ref;
@@ -357,11 +254,11 @@ public class AVLTree implements Directory {
                         root = root.right;
                     }
                 }
-                return node.value;
+                return node;
             } else {
                 Node node = root.delete(key);
                 if (node != null) {
-                    return node.value;
+                    return node;
                 }
             }
             return null;
@@ -373,288 +270,49 @@ public class AVLTree implements Directory {
     public Object getFirst() {
         if (root != null) {
             ref = root;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
             while (ref.left != null) {
                 ref = ref.left;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
             }
         }
         return ref.value;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     }
+    //DO NOT USE
 
     public Object getNext() {
         if (ref.left == null && ref.right == null) {
             if (ref.parent.left == ref) {
                 ref = ref.parent;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                return ref.value;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+                return ref;
             } else {
                 while (ref.parent != null && ref.parent.right == ref) {
                     ref = ref.parent;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                 }
                 if (ref.parent != null) {
                     ref = ref.parent;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                 } else {
                     ref = null;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                    return null;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+                    return ref;
                 }
-                return ref.value;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+                return ref;
             }
         } else {
             if (ref.right != null) {
                 ref = ref.right;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                 while (ref.left != null) {
                     ref = ref.left;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                 }
-                return ref.value;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+                return ref;
             } else {
                 if (ref.parent != null) {
                     while (ref.parent.right == ref) {
                         ref = ref.parent;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                     }
                     if (ref.parent != null) {
                         ref = ref.parent;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                     }
-                    return ref.value;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+                    return ref;
                 } else {
                     return null;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                 }
             }
         }
@@ -662,12 +320,56 @@ public class AVLTree implements Directory {
 
     public int size() {
         return this.size;
+    }
+
+    public static void main(String[] args) {
+        AVLTree avt = new AVLTree();
+        String name, number;
+
+        for (int i = 0; i < 100; i++) {
+            name = Integer.toString(i);
+            number = Integer.toString(i);
+            avt.insert(name, number);
+        }
+        System.out.println(avt.getFirst());
+        while (avt.ref != null) {
+            Node nd = (Node) avt.getNext2();
+            if (nd != null) {
+                System.out.println(nd.value + " höjd: " + nd.depth);
+            } else {
+                System.out.println("null");
+            }
+        }
 
 
+        while (avt.ref != null) {
+            Node nd = (Node) avt.getNext();
+            if (nd != null) {
+                System.out.println(nd.value);
+            } else {
+                System.out.println("null");
+            }
+        }
+    }
 
-
-
-
-
+    public Node getNext2() {
+        if (ref == null) {
+            return null;
+        }
+        if (ref.right != null) {
+            ref = ref.right;
+            while (ref.left != null) {
+                ref = ref.left;
+            }
+            return ref;
+        }
+        while (ref.parent != null) {
+            if (ref.parent.left == ref) {
+                ref = ref.parent;
+                return ref;
+            }
+        }
+        ref = null;
+        return ref;
     }
 }
