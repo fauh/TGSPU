@@ -47,11 +47,8 @@ public class AVLTree implements Directory {
                     this.right = this.right.insert(key, value);
                 }
             }
-            //betta check yaself befo' yo wreck yaself shiggity-check yaself befoä yo wreck yaself
-            //cuz big deez in y mouth is bad fo' yo health.
             fixDepth(this);
             return this.checkAndBalance();
-            //return this.rebalance();
         }
 
         private Object find(String key) {
@@ -140,8 +137,8 @@ public class AVLTree implements Directory {
             Node subtreeRight = this.right;
             Node subtreeLeft = this.left;
 
-            if (depth(subtreeLeft) - depth(subtreeRight) < -1) {//höger subträd är tyngre än vänster i subträdsroten
-                if (depth(subtreeRight.left) - depth(subtreeRight.right) < 0) {
+            if (depth(subtreeLeft) - depth(subtreeRight) <= -2) {//höger subträd är tyngre än vänster i subträdsroten
+                if (depth(subtreeRight.left) > depth(subtreeRight.right)) {
                     return counterClockWiseRotation(subtreeRoot);
                 } else if (depth(subtreeRight.left) - depth(subtreeRight.right) > 1) {
                     //dubbelhöger
@@ -150,8 +147,8 @@ public class AVLTree implements Directory {
                     System.out.println("Balancing Failed. Previous Balances funked up.");
                     return null;
                 }
-            } else if (depth(subtreeLeft) - depth(subtreeRight) > 1) {//vänster subträd är tyngre än höger i subträdsroten
-                if (depth(subtreeLeft.left) - depth(subtreeLeft.right) < 0) {
+            } else if (depth(subtreeLeft) - depth(subtreeRight) >= 2) {//vänster subträd är tyngre än höger i subträdsroten
+                if (depth(subtreeLeft.left)< depth(subtreeLeft.right) ) {
                     return clockWiseRotation(subtreeRoot);
                 } else if (depth(subtreeLeft.left) - depth(subtreeLeft.right) > 1) {
                     clockWiseRotation(subtreeRight);
@@ -333,7 +330,7 @@ public class AVLTree implements Directory {
         }
         System.out.println(avt.getFirst());
         while (avt.ref != null) {
-            Node nd = (Node) avt.getNext2();
+            Node nd = (Node) avt.getNext();
             if (nd != null) {
                 System.out.println(nd.value + " höjd: " + nd.depth);
             } else {
